@@ -1,9 +1,9 @@
 "use client";
 
-export default function Dashboard() {
+export default function DashboardOverview() {
   return (
     <div>
-      {/* Main dashboard UI here */}
+      {/* Your dashboard UI here */}
       Welcome to your dashboard!
     </div>
   );

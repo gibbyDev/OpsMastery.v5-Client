@@ -1,4 +1,7 @@
 'use client';
+
+import { useState, useEffect } from "react";
+import { useAuthStore } from "@/lib/store/authSlice";
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,7 +41,8 @@ import {
   IconCreditCard,
   IconLogout,
   IconPhotoUp,
-  IconUserCircle
+  IconUserCircle,
+  IconMessage
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -60,39 +64,31 @@ const tenants = [
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 export default function AppSidebar() {
+  // All hooks at the top!
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const signOut = useAuthStore((state) => state.signOut);
 
-  const [user, setUser] = React.useState<{
-    user_id: string | number;
-    fullName: string;
-    email: string;
-  } | null>(null);
-
-  React.useEffect(() => {
-    const userId = localStorage.getItem('user_id');
-    if (!userId) return;
-    fetch(`${API_URL}/users/${userId}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        setUser({
-          user_id: data.user_id || userId,
-          fullName: data.name || data.username || '',
-          email: data.email,
-        });
-      });
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
   }, []);
+
+  // Side effects based on sidebar state changes
+  useEffect(() => {
+    // ...your sidebar logic...
+  }, [isOpen]);
+
+  // Only conditionally return after all hooks
+  if (!hasMounted) return null;
 
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
   };
 
   const activeTenant = tenants[0];
-
-  React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
 
   return (
     <Sidebar collapsible='icon'>
@@ -177,8 +173,8 @@ export default function AppSidebar() {
                       className='h-8 w-8 rounded-lg'
                       showInfo
                       user={{
-                        user_id: user.user_id,
-                        fullName: user.fullName,
+                        user_id: user.id, // <-- FIXED HERE
+                        fullName: user.name || user.username || "",
                         emailAddresses: [{ emailAddress: user.email }],
                       }}
                     />
@@ -199,8 +195,8 @@ export default function AppSidebar() {
                         className='h-8 w-8 rounded-lg'
                         showInfo
                         user={{
-                          user_id: user.user_id,
-                          fullName: user.fullName,
+                          user_id: user.id, // <-- FIXED HERE
+                          fullName: user.name || user.username || "",
                           emailAddresses: [{ emailAddress: user.email }],
                         }}
                       />
@@ -228,10 +224,7 @@ export default function AppSidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {
-                    await fetch(`${API_URL}/signout`, {
-                      method: 'POST',
-                      credentials: 'include',
-                    });
+                    await signOut();
                     router.push('/auth/sign-in');
                   }}
                 >

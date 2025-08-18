@@ -57,6 +57,22 @@ export const navItems: NavItem[] = [
     shortcut: ['k', 'k'],
     isActive: false,
     items: [] // No child items
+  },
+  {
+    title: 'Video Chat',
+    url: '/video-chat-room',
+    icon: 'media',
+    shortcut: ['v', 'v'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Chat',
+    url: '/chat',
+    icon: 'message',
+    shortcut: ['v', 'v'],
+    isActive: false,
+    items: [] // No child items
   }
 ];
 

@@ -48,6 +48,9 @@ export function NavUser() {
           username: data.username || '',
           email: data.email || '',
         });
+        if (data.username) {
+          localStorage.setItem('username', data.username);
+        }
       });
   }, []);
 

@@ -39,6 +39,11 @@ export function NavMain({
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarGroupContent className='flex flex-col gap-2'>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Video Chat" className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear">
+              <a href="/video-chat-room">Video Chat</a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           {items.map((item) => (
             <Collapsible
               key={item.title}
