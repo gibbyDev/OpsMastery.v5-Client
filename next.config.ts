@@ -10,7 +10,12 @@ const baseConfig: NextConfig = {
         hostname: 'api.slingacademy.com',
         port: ''
       }
-    ]
+    ],
+    domains: [
+      'cdn.jsdelivr.net', // <-- add this line
+      'avatars.githubusercontent.com', // <-- add this line
+      // add other domains if needed
+    ],
   },
   transpilePackages: ['geist']
 };

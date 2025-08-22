@@ -19,6 +19,8 @@ export default function ProfileViewPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
   // Fetch user data on mount
   useEffect(() => {
     const fetchUser = async () => {
@@ -26,16 +28,23 @@ export default function ProfileViewPage() {
       setError('');
       try {
         // Replace with your actual user ID logic
-        const id = localStorage.getItem('user_id');
-        if (!id) {
+        const userString = localStorage.getItem('user');
+        const user = userString ? JSON.parse(userString) : null;
+        const userId = user?.id;
+        const username = user?.username;
+        const role = user?.role;
+        if (!userId) {
           setError('User ID not found');
           setLoading(false);
           return;
         }
-        setUserId(id);
+        setUserId(userId);
 
-        const res = await fetch(`${API_URL}/users/${id}`, {
-          credentials: 'include',
+        const res = await fetch(`${API_URL}/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          credentials: "include",
         });
         if (!res.ok) throw new Error('Failed to fetch user');
         const data = await res.json();
@@ -44,7 +53,7 @@ export default function ProfileViewPage() {
         setPhoneNumber(data.phone_number || '');
         setUsername(data.username || '');
         setRole(data.role || '');
-        setProfilePhotoUrl(`${API_URL}/users/${id}/profile_photo`);
+        setProfilePhotoUrl(`${API_URL}/users/${userId}/profile_photo`);
       } catch (err) {
         setError('Could not load profile');
       } finally {
@@ -78,6 +87,10 @@ export default function ProfileViewPage() {
 
       const res = await fetch(`${API_URL}/users/${userId}`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          // Do NOT set Content-Type for FormData; browser will set it automatically
+        },
         credentials: 'include',
         body: formData,
       });

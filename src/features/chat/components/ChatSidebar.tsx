@@ -7,8 +7,9 @@ import { Trash2, Menu, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { fetchChatPartners, searchUsers, deleteChat } from "@/lib/api/chat";
+import { fetchChatPartners, deleteChat, searchUsers } from "@/lib/api/chat";
 import { useAuthStore } from "@/lib/store/authSlice";
+import React from "react";
 
 interface ChatPartner {
   id: string;
@@ -45,9 +46,9 @@ export function ChatSidebar({
   const accessToken = useAuthStore((state) => state.accessToken);
   const [partners, setPartners] = useState<ChatPartner[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<User[]>([]);
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
 
   // Fetch chat partners
   useEffect(() => {
@@ -58,24 +59,24 @@ export function ChatSidebar({
       .finally(() => setLoadingPartners(false));
   }, [currentUserId, accessToken]);
 
-  // User search
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    setLoadingSearch(true);
-    searchUsers(searchQuery, accessToken ?? "")
-      .then(setSearchResults)
-      .finally(() => setLoadingSearch(false));
-  }, [searchQuery, accessToken]);
-
   // For delete
   const handleDelete = async (partner: ChatPartner) => {
     await deleteChat(currentUserId, partner.id, accessToken ?? "");
     // Refresh partners list
     fetchChatPartners(currentUserId, accessToken ?? "").then(setPartners);
   };
+
+  // Search users
+  useEffect(() => {
+    if (!searchQuery.trim() || !accessToken) {
+      setSearchResults([]);
+      return;
+    }
+    setLoadingSearch(true);
+    searchUsers(searchQuery, accessToken)
+      .then((results) => setSearchResults(results))
+      .finally(() => setLoadingSearch(false));
+  }, [searchQuery, accessToken]);
 
   return (
     <div
@@ -107,40 +108,6 @@ export function ChatSidebar({
             className="pl-10"
           />
         </div>
-        {searchQuery && (
-          <div>
-            {loadingSearch ? (
-              <div className="text-muted-foreground py-2">Searching...</div>
-            ) : searchResults.length > 0 ? (
-              searchResults.map((user) => (
-                <div
-                  key={user.id}
-                  onClick={() => onSelectPartner(user)}
-                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>
-                      {user.username
-                        ? user.username.charAt(0)
-                        : user.email
-                        ? user.email.charAt(0)
-                        : "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {user.username || user.email || "Unknown"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-muted-foreground py-2">No users found</div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Chat Partners */}
@@ -151,7 +118,7 @@ export function ChatSidebar({
           ) : partners.length > 0 ? (
             partners.map((partner) => (
               <div
-                key={partner.id}
+                key={partner.id || partner.email || partner.username}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors",
                   selectedPartnerId === partner.id && "bg-accent"

@@ -1,4 +1,5 @@
 import { NavItem } from '@/types';
+import { w } from '@faker-js/faker/dist/airline-CLphikKp';
 
 export type Product = {
   photo_url: string;
@@ -26,6 +27,22 @@ export const navItems: NavItem[] = [
     url: '/dashboard/product',
     icon: 'product',
     shortcut: ['p', 'p'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Tickets',
+    url: '/dashboard/tickets',
+    icon: 'ticket',
+    shortcut: ['t', 't'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Users',
+    url: '/dashboard/users',
+    icon: 'users',
+    shortcut: ['u', 'u'],
     isActive: false,
     items: [] // No child items
   },

@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAuthStore } from '@/lib/store/authSlice';
 
-export function useChatSocket(wsBaseUrl: string, myUsername: string) {
+export function useChatSocket(chatId: string) {
+  const accessToken = useAuthStore((state) => state.accessToken);
   const [messages, setMessages] = useState<{ sender_username: string; content: string }[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !wsBaseUrl) return;
+    if (!chatId || !accessToken) return;
 
-    const ws = new WebSocket(wsBaseUrl);
+    const ws = new WebSocket(`ws://localhost:5000/ws?chatId=${chatId}&token=${accessToken}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -27,29 +29,27 @@ export function useChatSocket(wsBaseUrl: string, myUsername: string) {
     };
     ws.onclose = (event) => {
       console.warn('Frontend: WebSocket closed', event);
+      wsRef.current = null;
     };
 
     return () => {
       ws.close();
     };
-  }, [wsBaseUrl, myUsername]);
+  }, [chatId, accessToken]);
 
-  const sendMessage = (to: string, content: string) => {
+  const sendMessage = (content: string) => {
     if (
       wsRef.current &&
       wsRef.current.readyState === WebSocket.OPEN &&
-      content.trim() &&
-      to
+      content.trim()
     ) {
       wsRef.current.send(JSON.stringify({
-        to,
         content,
         sender_username: myUsername,
       }));
     } else {
       console.warn('Frontend: WebSocket not open or missing data', {
         wsState: wsRef.current?.readyState,
-        to,
         content,
       });
     }

@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/lib/store/authSlice";
+import {
+  getChatHistoryById,
+  updateChatUsers,
+} from "@/lib/api/chat";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatHeader } from "./ChatHeader";
 import { ChatMessages } from "./ChatMessages";
@@ -9,40 +13,73 @@ import { ChatInput } from "./ChatInput";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
-export default function ChatRoom() {
-  const currentUser = useAuthStore((state) => state.user);
+export default function ChatRoom({ chatId }: { chatId: string }) {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const currentUser = useAuthStore((state) => state.user);
 
-  const [selectedPartner, setSelectedPartner] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [selectedPartner, setSelectedPartner] = useState<any>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  // Fetch chat history when a partner is selected
+  // Add this state to check if we're on the client
+  const [hasMounted, setHasMounted] = useState(false);
+
   useEffect(() => {
-    if (!selectedPartner || !currentUser) return;
-    fetch(
-      `/api/v1/chats?user1=${currentUser.id}&user2=${selectedPartner.id}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "include",
+    setHasMounted(true);
+  }, []);
+
+  // Fetch chat history by chatId
+  useEffect(() => {
+    if (!chatId || !accessToken) return;
+    getChatHistoryById(chatId, accessToken ?? "").then(setMessages);
+  }, [chatId, accessToken]);
+
+  // WebSocket for real-time updates
+  useEffect(() => {
+    if (!chatId || !accessToken) return;
+    const ws = new WebSocket(`ws://localhost:5000/ws?chatId=${chatId}&token=${accessToken ?? ""}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        setMessages((prev) => [...prev, msg]);
+      } catch (err) {
+        console.error("Failed to parse message:", event.data, err);
       }
-    )
-      .then((res) => res.json())
-      .then(setMessages)
-      .catch(() => setMessages([]));
-  }, [selectedPartner, currentUser, accessToken]);
+    };
+
+    ws.onerror = (event) => {
+      console.error("WebSocket error", event);
+    };
+
+    ws.onclose = () => {
+      wsRef.current = null;
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [chatId, accessToken]);
+
+  // Add/remove users to chat (group membership)
+  const handleUpdateChatUsers = async (userIds: string[]) => {
+    if (!chatId || !accessToken) return;
+    await updateChatUsers(chatId, userIds, accessToken ?? "");
+    // Optionally, refetch chat members or update UI
+  };
 
   // Send message (persist to backend)
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedPartner || !currentUser) return;
+    if (!newMessage.trim() || !chatId || !currentUser) return;
     const msg = {
       sender_username: currentUser.username,
-      recipient: selectedPartner.username,
       content: newMessage,
     };
     // POST to backend (implement this route if needed)
-    await fetch(`${API_URL}/chats`, {
+    await fetch(`${API_URL}/chats/${chatId}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,39 +87,31 @@ export default function ChatRoom() {
       },
       credentials: "include",
       body: JSON.stringify({
-        user1: currentUser.id,
-        user2: selectedPartner
+        sender: currentUser.username,
+        content: newMessage,
       }),
     });
     setNewMessage("");
     // Optionally re-fetch messages
-    fetch(
-      `/api/v1/chats?user1=${currentUser.id}&user2=${selectedPartner.id}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "include",
-      }
-    )
-      .then((res) => res.json())
-      .then(setMessages)
-      .catch(() => setMessages([]));
+    getChatHistoryById(chatId, accessToken ?? "").then(setMessages);
   };
 
-  // Delete chat
   const handleDeletePartner = async (partner: any) => {
-    if (!currentUser) return;
-    await fetch(
-      `/api/v1/chats?user1=${currentUser.id}&user2=${partner.id}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "include",
-      }
-    );
+    if (!chatId || !accessToken) return;
+    await fetch(`${API_URL}/chats/${chatId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken ?? ""}` },
+      credentials: "include",
+    });
     setSelectedPartner(null);
     setMessages([]);
-    // No .json() call here!
+    // Optionally, refresh sidebar partners list here
   };
+
+  if (!hasMounted) {
+    // Prevent rendering until client hydration
+    return null;
+  }
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Please sign in.</div>;

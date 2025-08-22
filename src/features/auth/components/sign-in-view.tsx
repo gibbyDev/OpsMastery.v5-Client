@@ -1,21 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import { IconStar } from "@tabler/icons-react";
-import { Metadata } from "next";
+import { FcGoogle } from "react-icons/fc"; // Google logo
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useAuthStore } from "@/lib/store/authSlice";
+import { IconStar } from "@tabler/icons-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
-
-export const metadata: Metadata = {
-  title: "Authentication",
-  description: "Authentication forms built using the components.",
-};
 
 export default function SignInViewPage({ stars }: { stars: number }) {
   const router = useRouter();
@@ -126,6 +121,33 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
+          <div className="flex flex-col w-full gap-2 mt-4">
+            <div className="flex items-center w-full my-2">
+              <div className="flex-grow border-t border-muted" />
+              <span className="mx-2 text-xs text-muted-foreground">or</span>
+              <div className="flex-grow border-t border-muted" />
+            </div>
+            <button
+              type="button"
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-md border bg-black text-white py-2 font-medium hover:bg-gray-900 transition-colors"
+              )}
+              onClick={() => window.location.href = `${API_URL}/auth/github`}
+            >
+              <GitHubLogoIcon className="w-5 h-5 mr-2" />
+              Sign in with Github
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-md border bg-white text-gray-900 py-2 font-medium hover:bg-gray-100 transition-colors"
+              )}
+              onClick={() => window.location.href = `${API_URL}/auth?provider=google`}
+            >
+              <FcGoogle className="w-5 h-5 mr-2" />
+              Sign in with Google
+            </button>
+          </div>
           <p className="text-muted-foreground px-8 text-center text-sm">
             Don't have an account?{" "}
             <Link
