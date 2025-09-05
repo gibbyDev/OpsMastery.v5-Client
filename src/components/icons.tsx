@@ -1,6 +1,7 @@
 import {
   IconAlertTriangle,
   IconArrowRight,
+  IconCalendar,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
@@ -42,6 +43,7 @@ export const Icons = {
   dashboard: IconLayoutDashboard,
   logo: IconCommand,
   login: IconLogin,
+  calendar: IconCalendar,
   close: IconX,
   product: IconShoppingBag,
   spinner: IconLoader2,

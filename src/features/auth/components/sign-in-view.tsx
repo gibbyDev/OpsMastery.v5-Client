@@ -4,11 +4,11 @@ import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import { FcGoogle } from "react-icons/fc"; // Google logo
+import { FcGoogle } from "react-icons/fc";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/lib/store/authSlice";
 import { IconStar } from "@tabler/icons-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
@@ -18,16 +18,17 @@ export default function SignInViewPage({ stars }: { stars: number }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const success = await useAuthStore.getState().signIn(identifier, password);
-    if (success) {
+    try {
+      await signIn(identifier, password);
       router.push("/dashboard/overview");
-    } else {
-      setError(useAuthStore.getState().error ?? "");
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Sign in failed");
     }
     setLoading(false);
   };

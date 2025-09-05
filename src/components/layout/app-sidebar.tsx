@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { useAuthStore } from "@/lib/store/authSlice";
 import {
   Collapsible,
   CollapsibleContent,
@@ -49,6 +48,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
+import { useAuth } from "@/hooks/useAuth"; // <-- Use new hook
+
 export const company = {
   name: 'Acme Inc',
   logo: IconPhotoUp,
@@ -64,24 +65,20 @@ const tenants = [
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 export default function AppSidebar() {
-  // All hooks at the top!
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const signOut = useAuthStore((state) => state.signOut);
+  const { user, signOut } = useAuth(); // <-- Use new hook
 
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  // Side effects based on sidebar state changes
   useEffect(() => {
     // ...your sidebar logic...
   }, [isOpen]);
 
-  // Only conditionally return after all hooks
   if (!hasMounted) return null;
 
   const handleSwitchTenant = (_tenantId: string) => {
@@ -173,7 +170,7 @@ export default function AppSidebar() {
                       className='h-8 w-8 rounded-lg'
                       showInfo
                       user={{
-                        user_id: user.id, // <-- FIXED HERE
+                        user_id: user.id,
                         fullName: user.name || user.username || "",
                         emailAddresses: [{ emailAddress: user.email }],
                       }}
@@ -195,7 +192,7 @@ export default function AppSidebar() {
                         className='h-8 w-8 rounded-lg'
                         showInfo
                         user={{
-                          user_id: user.id, // <-- FIXED HERE
+                          user_id: user.id,
                           fullName: user.name || user.username || "",
                           emailAddresses: [{ emailAddress: user.email }],
                         }}

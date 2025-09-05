@@ -1,7 +1,7 @@
 import FormCardSkeleton from '@/components/form-card-skeleton';
 import PageContainer from '@/components/layout/page-container';
 import { Suspense } from 'react';
-import TicketViewPage from '@/features/tickets/components/ticket-view-page';
+import TicketViewPage from '@/features/tickets/components/ticket-data-table';
 
 export const metadata = {
   title: 'Dashboard : Ticket View'

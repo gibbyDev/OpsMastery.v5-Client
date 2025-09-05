@@ -14,12 +14,16 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  search?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 export function DataTableToolbar<TData>({
   table,
   children,
   className,
+  search,
+  onSearchChange,
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -61,12 +65,24 @@ export function DataTableToolbar<TData>({
         )}
       </div>
       <div className='flex items-center gap-2'>
+        {/* Add the search input here */}
+        {typeof onSearchChange === "function" && (
+          <Input
+            type="text"
+            value={search ?? ""}
+            onChange={e => onSearchChange(e.target.value)}
+            placeholder="Search users..."
+            className="h-8 w-40 lg:w-56"
+          />
+        )}
         {children}
         <DataTableViewOptions table={table} />
       </div>
+      {console.log("Toolbar search value:", search)}
     </div>
   );
 }
+
 interface DataTableToolbarFilterProps<TData> {
   column: Column<TData>;
 }

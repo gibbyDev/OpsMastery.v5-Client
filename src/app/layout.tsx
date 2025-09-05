@@ -10,7 +10,6 @@ import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import './globals.css';
 import './theme.css';
-// import { TokenRefresh } from '@/components/TokenRefresh';
 
 const META_THEME_COLORS = {
   light: '#ffffff',

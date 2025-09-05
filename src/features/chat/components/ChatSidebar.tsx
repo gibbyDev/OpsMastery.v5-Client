@@ -1,108 +1,70 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Trash2, Menu, X, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { fetchChatPartners, deleteChat, searchUsers } from "@/lib/api/chat";
-import { useAuthStore } from "@/lib/store/authSlice";
-import React from "react";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
+import { Menu, X } from "lucide-react"
+import { ChatUser } from "@/constants/data"
 
-interface ChatPartner {
-  id: string;
-  username: string;
-  email?: string;
-  avatar?: string;
-  lastMessageTime?: string;
+type ChatSidebarProps = {
+  partners: ChatUser[]
+  setPartners: (partners: ChatUser[]) => void
+  selectedPartnerId: string | null
+  onSelectPartner: (partner: ChatUser | null) => void
 }
 
-interface User {
-  id: string;
-  username: string;
-  email?: string;
-  avatar?: string;
-}
-
-interface ChatSidebarProps {
-  currentUserId: string;
-  onSelectPartner: (partner: ChatPartner | User) => void;
-  selectedPartnerId: string | null;
-  onDeletePartner: (partner: ChatPartner) => void;
-  isSidebarCollapsed: boolean;
-  setIsSidebarCollapsed: (v: boolean) => void;
-}
-
-export function ChatSidebar({
-  currentUserId,
-  onSelectPartner,
+export default function ChatSidebar({
+  partners = [],
+  setPartners,
   selectedPartnerId,
-  onDeletePartner,
-  isSidebarCollapsed,
-  setIsSidebarCollapsed,
+  onSelectPartner,
 }: ChatSidebarProps) {
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const [partners, setPartners] = useState<ChatPartner[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [loadingPartners, setLoadingPartners] = useState(false);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // Fetch chat partners
-  useEffect(() => {
-    if (!currentUserId) return;
-    setLoadingPartners(true);
-    fetchChatPartners(currentUserId, accessToken ?? "")
-      .then(setPartners)
-      .finally(() => setLoadingPartners(false));
-  }, [currentUserId, accessToken]);
+  const filteredPartners = (partners ?? []).filter(
+    (partner) =>
+      partner.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      partner.email.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
-  // For delete
-  const handleDelete = async (partner: ChatPartner) => {
-    await deleteChat(currentUserId, partner.id, accessToken ?? "");
-    // Refresh partners list
-    fetchChatPartners(currentUserId, accessToken ?? "").then(setPartners);
-  };
-
-  // Search users
-  useEffect(() => {
-    if (!searchQuery.trim() || !accessToken) {
-      setSearchResults([]);
-      return;
+  const handleDelete = (id: string) => {
+    const updatedPartners = partners.filter((p) => p.id !== id)
+    setPartners(updatedPartners)
+    if (selectedPartnerId === id) {
+      onSelectPartner(updatedPartners.length > 0 ? updatedPartners[0] : null)
     }
-    setLoadingSearch(true);
-    searchUsers(searchQuery, accessToken)
-      .then((results) => setSearchResults(results))
-      .finally(() => setLoadingSearch(false));
-  }, [searchQuery, accessToken]);
+  }
 
   return (
     <div
       className={cn(
-        "border-r border-border flex flex-col transition-all duration-300 ease-in-out bg-background",
-        isSidebarCollapsed ? "w-0 overflow-hidden" : "w-80"
+        "border-r border-border flex flex-col h-full transition-all duration-300 ease-in-out bg-background",
+        isCollapsed ? "w-0 overflow-hidden" : "w-80"
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <span className="font-semibold text-lg">Messages</span>
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <h2 className="font-semibold">Messages</h2>
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="ml-2"
         >
-          {isSidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+          {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
         </Button>
       </div>
 
       {/* Search Field */}
       <div className="p-4 border-b border-border">
-        <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">🔍</span>
           <Input
-            placeholder="Search users..."
+            placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -111,34 +73,25 @@ export function ChatSidebar({
       </div>
 
       {/* Chat Partners */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-2">
-          {loadingPartners ? (
-            <div className="text-muted-foreground py-4">Loading chats...</div>
-          ) : partners.length > 0 ? (
-            partners.map((partner) => (
+          {filteredPartners.length > 0 ? (
+            filteredPartners.map((partner) => (
               <div
-                key={partner.id || partner.email || partner.username}
+                key={partner.id}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors",
-                  selectedPartnerId === partner.id && "bg-accent"
+                  "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors group",
+                  selectedPartnerId === partner.id && "bg-accent",
                 )}
                 onClick={() => onSelectPartner(partner)}
               >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={partner.avatar || "/placeholder.svg"} />
-                  <AvatarFallback>
-                    {partner.username
-                      ? partner.username.charAt(0)
-                      : partner.email
-                      ? partner.email.charAt(0)
-                      : "?"}
-                  </AvatarFallback>
+                  <AvatarImage src={partner.avatar || "/placeholder.svg?height=40&width=40"} />
+                  <AvatarFallback>{partner.username ? partner.username.charAt(0).toUpperCase() : "U"}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">
-                    {partner.username || partner.email || "Unknown"}
-                  </p>
+                  <p className="font-medium truncate">{partner.username}</p>
+                  <p className="text-xs text-muted-foreground truncate">{partner.email}</p>
                   <p className="text-xs text-muted-foreground">
                     {partner.lastMessageTime
                       ? new Date(partner.lastMessageTime).toLocaleString()
@@ -149,20 +102,23 @@ export function ChatSidebar({
                   size="icon"
                   variant="ghost"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(partner);
+                    e.stopPropagation()
+                    handleDelete(partner.id)
                   }}
-                  title="Delete chat"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                  title="Delete conversation"
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                  🗑️
                 </Button>
               </div>
             ))
           ) : (
-            <div className="text-muted-foreground py-4">No chats yet.</div>
+            <div className="text-muted-foreground py-8 text-center text-sm">
+              {searchQuery ? "No conversations found" : "No conversations yet"}
+            </div>
           )}
         </div>
       </ScrollArea>
     </div>
-  );
+  )
 }
